@@ -8,7 +8,7 @@ class Game {
         this.money = 300;
         this.score = 0;
         this.lives = 10;
-        this.wave = 1;
+        this.wave = 0;  // Start at 0 since spawnWave will increment it
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
@@ -61,6 +61,9 @@ class Game {
         if (this.waveInProgress) return;
         
         this.waveInProgress = true;
+        this.wave++;  // Increment wave count when starting new wave
+        document.getElementById('wave').textContent = this.wave;
+        
         const enemyCount = 5 + this.wave * 2;
         
         for (let i = 0; i < enemyCount; i++) {
@@ -138,8 +141,6 @@ class Game {
 
         if (this.enemies.length === 0) {
             this.waveInProgress = false;
-            this.wave++;
-            document.getElementById('wave').textContent = this.wave;
             setTimeout(() => this.spawnWave(), 3000);
         }
 
@@ -181,11 +182,12 @@ class Game {
             if (!this.isOnPath(x, y)) {
                 this.money -= 75;
                 this.updateMoneyDisplay();
-                this.turrets.push(new Turret(
+                const turret = new Turret(
                     x, y,
                     this.createBullet.bind(this),
                     this.audioManager.playSound.bind(this.audioManager)
-                ));
+                );
+                this.turrets.push(turret);
                 this.audioManager.playSound('place');
                 this.selectedTurret = null;
             }
