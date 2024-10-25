@@ -8,7 +8,7 @@ class Game {
         this.money = 300;
         this.score = 0;
         this.lives = 10;
-        this.wave = 0;  // Start at 0 since spawnWave will increment it
+        this.wave = 0;
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
@@ -19,10 +19,18 @@ class Game {
         this.mouseY = 0;
         this.waveInProgress = false;
         
+        this.turretTypes = {
+            'basic': { cost: 75, name: 'Basic Turret', description: 'Balanced damage and fire rate' },
+            'sniper': { cost: 150, name: 'Sniper Turret', description: 'High damage, long range, slow fire rate' },
+            'rapid': { cost: 100, name: 'Rapid Turret', description: 'Low damage, high fire rate' },
+            'splash': { cost: 200, name: 'Splash Turret', description: 'Area damage' }
+        };
+        
         this.loadImages();
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
+        this.updateTurretShop();
     }
 
     loadImages() {
@@ -38,6 +46,19 @@ class Game {
             img.src = src;
             img.style.display = 'none';
             document.body.appendChild(img);
+        });
+    }
+
+    updateTurretShop() {
+        const shop = document.querySelector('.turret-shop');
+        shop.innerHTML = '<h3>Turret Shop</h3>';
+        
+        Object.entries(this.turretTypes).forEach(([type, info]) => {
+            const button = document.createElement('button');
+            button.className = 'btn btn-secondary mb-2 w-100';
+            button.onclick = () => this.selectTurret(type);
+            button.innerHTML = `${info.name} ($${info.cost})<br><small>${info.description}</small>`;
+            shop.appendChild(button);
         });
     }
 
@@ -61,7 +82,7 @@ class Game {
         if (this.waveInProgress) return;
         
         this.waveInProgress = true;
-        this.wave++;  // Increment wave count when starting new wave
+        this.wave++;
         document.getElementById('wave').textContent = this.wave;
         
         const enemyCount = 5 + this.wave * 2;
@@ -74,6 +95,7 @@ class Game {
                     this.path,
                     this.tileSize
                 );
+                enemy.health = enemy.maxHealth = 100 + (this.wave - 1) * 20;
                 this.enemies.push(enemy);
             }, i * 1000);
         }
@@ -83,8 +105,8 @@ class Game {
         document.getElementById('money').textContent = this.money;
     }
 
-    createBullet(x, y, targetX, targetY, damage) {
-        this.bullets.push(new Bullet(x, y, targetX, targetY, damage));
+    createBullet(x, y, targetX, targetY, damage, splashRadius = 0) {
+        this.bullets.push(new Bullet(x, y, targetX, targetY, damage, splashRadius));
     }
 
     gameLoop() {
@@ -113,26 +135,47 @@ class Game {
             bullet.update();
             bullet.draw(this.ctx);
             
+            let hitEnemy = false;
+            
             for (let enemy of this.enemies) {
                 if (!enemy.exploding && bullet.checkCollision(enemy)) {
                     enemy.takeDamage(bullet.damage);
+                    
+                    if (bullet.splashRadius > 0) {
+                        // Apply splash damage to nearby enemies
+                        this.enemies.forEach(otherEnemy => {
+                            if (otherEnemy !== enemy && !otherEnemy.exploding) {
+                                const distance = Math.sqrt(
+                                    Math.pow(enemy.x - otherEnemy.x, 2) + 
+                                    Math.pow(enemy.y - otherEnemy.y, 2)
+                                );
+                                if (distance < bullet.splashRadius) {
+                                    const splashDamage = bullet.damage * (1 - distance / bullet.splashRadius);
+                                    otherEnemy.takeDamage(splashDamage);
+                                }
+                            }
+                        });
+                    }
+                    
                     if (enemy.exploding) {
                         this.score += 10;
                         this.money += 25;
                         this.updateMoneyDisplay();
                         document.getElementById('score').textContent = this.score;
                     }
-                    return false;
+                    hitEnemy = true;
+                    break;
                 }
             }
             
-            return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
+            return !hitEnemy && !bullet.isOffscreen(this.canvas.width, this.canvas.height);
         });
 
         if (this.selectedTurret) {
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 75;
+            const cost = this.turretTypes[this.selectedTurret].cost;
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= cost;
             this.ctx.globalAlpha = 0.5;
-            this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
+            this.ctx.fillStyle = canPlace ? this.getTurretColor(this.selectedTurret) : '#f00';
             this.ctx.beginPath();
             this.ctx.arc(this.mouseX, this.mouseY, 20, 0, Math.PI * 2);
             this.ctx.fill();
@@ -151,6 +194,16 @@ class Game {
         }
 
         requestAnimationFrame(this.gameLoop);
+    }
+
+    getTurretColor(type) {
+        switch(type) {
+            case 'basic': return '#1a75ff';
+            case 'sniper': return '#ff3333';
+            case 'rapid': return '#33cc33';
+            case 'splash': return '#ff9933';
+            default: return '#1a75ff';
+        }
     }
 
     drawPath() {
@@ -178,12 +231,14 @@ class Game {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
-        if (this.selectedTurret && this.money >= 75) {
-            if (!this.isOnPath(x, y)) {
-                this.money -= 75;
+        if (this.selectedTurret) {
+            const cost = this.turretTypes[this.selectedTurret].cost;
+            if (this.money >= cost && !this.isOnPath(x, y)) {
+                this.money -= cost;
                 this.updateMoneyDisplay();
                 const turret = new Turret(
                     x, y,
+                    this.selectedTurret,
                     this.createBullet.bind(this),
                     this.audioManager.playSound.bind(this.audioManager)
                 );
@@ -196,8 +251,6 @@ class Game {
 
     isOnPath(x, y) {
         const bufferSize = this.tileSize * 0.75;
-        const tileX = x / this.tileSize;
-        const tileY = y / this.tileSize;
         
         for (let i = 0; i < this.path.length - 1; i++) {
             const start = this.path[i];
