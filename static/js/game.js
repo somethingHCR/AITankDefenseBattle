@@ -17,6 +17,7 @@ class Game {
         this.audioManager = new AudioManager();
         this.mouseX = 0;
         this.mouseY = 0;
+        this.waveInProgress = false;
         
         this.loadImages();
         this.canvas.addEventListener('click', this.handleClick.bind(this));
@@ -57,7 +58,11 @@ class Game {
     }
 
     spawnWave() {
+        if (this.waveInProgress) return;
+        
+        this.waveInProgress = true;
         const enemyCount = 5 + this.wave * 2;
+        
         for (let i = 0; i < enemyCount; i++) {
             setTimeout(() => {
                 const enemy = new Enemy(
@@ -132,9 +137,10 @@ class Game {
         }
 
         if (this.enemies.length === 0) {
+            this.waveInProgress = false;
             this.wave++;
             document.getElementById('wave').textContent = this.wave;
-            this.spawnWave();
+            setTimeout(() => this.spawnWave(), 3000);
         }
 
         if (this.lives <= 0) {
