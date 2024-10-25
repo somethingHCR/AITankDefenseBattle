@@ -20,7 +20,6 @@ class Game {
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
-        this.start();
     }
 
     generatePath() {
@@ -57,6 +56,10 @@ class Game {
 
     updateMoneyDisplay() {
         document.getElementById('money').textContent = this.money;
+    }
+
+    createBullet(x, y, targetX, targetY, damage) {
+        this.bullets.push(new Bullet(x, y, targetX, targetY, damage));
     }
 
     gameLoop() {
@@ -103,7 +106,7 @@ class Game {
                 }
             }
             
-            return !bullet.isOffscreen();
+            return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
         });
 
         // Draw turret placement preview
@@ -164,7 +167,11 @@ class Game {
             if (!this.isOnPath(x, y)) {
                 this.money -= 100;
                 this.updateMoneyDisplay();
-                this.turrets.push(new Turret(x, y));
+                this.turrets.push(new Turret(
+                    x, y,
+                    this.createBullet.bind(this),
+                    this.audioManager.playSound.bind(this.audioManager)
+                ));
                 this.audioManager.playSound('place');
                 this.selectedTurret = null;
             }
@@ -226,5 +233,7 @@ class Game {
 
 // Start the game when the page loads
 window.addEventListener('load', () => {
-    window.game = new Game();
+    const game = new Game();
+    game.start();
+    window.game = game;
 });

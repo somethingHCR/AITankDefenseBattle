@@ -53,7 +53,7 @@ class Enemy {
 }
 
 class Turret {
-    constructor(x, y) {
+    constructor(x, y, createBullet, playSound) {
         this.x = x;
         this.y = y;
         this.range = 150;
@@ -61,6 +61,8 @@ class Turret {
         this.fireRate = 1000; // milliseconds
         this.lastFired = 0;
         this.target = null;
+        this.createBullet = createBullet;
+        this.playSound = playSound;
     }
 
     update(enemies) {
@@ -82,12 +84,12 @@ class Turret {
 
         // Fire at target
         if (this.target && Date.now() - this.lastFired >= this.fireRate) {
-            game.bullets.push(new Bullet(
+            this.createBullet(
                 this.x, this.y,
                 this.target.x, this.target.y,
                 this.damage
-            ));
-            game.audioManager.playSound('shoot');
+            );
+            this.playSound('shoot');
             this.lastFired = Date.now();
         }
     }
@@ -140,12 +142,12 @@ class Bullet {
         return distance < 20;
     }
 
-    isOffscreen() {
+    isOffscreen(canvasWidth, canvasHeight) {
         return (
             this.x < 0 || 
-            this.x > game.canvas.width ||
+            this.x > canvasWidth ||
             this.y < 0 || 
-            this.y > game.canvas.height
+            this.y > canvasHeight
         );
     }
 }
