@@ -4,6 +4,8 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.gameLoop = this.gameLoop.bind(this);
         this.createBullet = this.createBullet.bind(this);
+        this.handleClick = this.handleClick.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.tileSize = 40;
         this.money = 300;
         this.score = 0;
@@ -27,8 +29,8 @@ class Game {
         };
         
         this.loadImages();
-        this.canvas.addEventListener('click', this.handleClick.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.canvas.addEventListener('click', this.handleClick);
+        this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.updateMoneyDisplay();
         this.updateTurretShop();
     }
