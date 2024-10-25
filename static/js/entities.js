@@ -5,14 +5,25 @@ class Enemy {
         this.path = path;
         this.tileSize = tileSize;
         this.currentPathIndex = 0;
-        this.speed = 2;
+        this.speed = 2.5; // Increased speed from 2 to 2.5
         this.health = 100;
         this.maxHealth = 100;
         this.isDead = false;
         this.reachedEnd = false;
+        this.exploding = false;
+        this.explosionFrame = 0;
+        this.explosionMaxFrames = 10;
     }
 
     update() {
+        if (this.exploding) {
+            this.explosionFrame++;
+            if (this.explosionFrame >= this.explosionMaxFrames) {
+                this.isDead = true;
+            }
+            return;
+        }
+
         if (this.currentPathIndex >= this.path.length) {
             this.reachedEnd = true;
             return;
@@ -34,9 +45,29 @@ class Enemy {
     }
 
     draw(ctx) {
-        // Draw enemy tank
-        ctx.fillStyle = '#f00';
-        ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
+        if (this.exploding) {
+            // Draw explosion
+            const explosionProgress = this.explosionFrame / this.explosionMaxFrames;
+            const radius = 30 * explosionProgress;
+            const alpha = 1 - explosionProgress;
+            
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#ff4400';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, radius * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            return;
+        }
+
+        // Draw tank using image
+        const tankImg = document.getElementById('tankImg');
+        ctx.drawImage(tankImg, this.x - 20, this.y - 20, 40, 40);
 
         // Draw health bar
         ctx.fillStyle = '#0f0';
@@ -46,8 +77,9 @@ class Enemy {
 
     takeDamage(amount) {
         this.health -= amount;
-        if (this.health <= 0) {
-            this.isDead = true;
+        if (this.health <= 0 && !this.exploding) {
+            this.exploding = true;
+            this.explosionFrame = 0;
         }
     }
 }
@@ -63,22 +95,32 @@ class Turret {
         this.target = null;
         this.createBullet = createBullet;
         this.playSound = playSound;
+        this.muzzleFlash = false;
+        this.muzzleFlashDuration = 100;
+        this.muzzleFlashStart = 0;
     }
 
     update(enemies) {
+        // Update muzzle flash
+        if (this.muzzleFlash && Date.now() - this.muzzleFlashStart > this.muzzleFlashDuration) {
+            this.muzzleFlash = false;
+        }
+
         // Find closest enemy in range
         this.target = null;
         let closestDistance = this.range;
         
         enemies.forEach(enemy => {
-            const distance = Math.sqrt(
-                Math.pow(enemy.x - this.x, 2) + 
-                Math.pow(enemy.y - this.y, 2)
-            );
-            
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                this.target = enemy;
+            if (!enemy.exploding) {
+                const distance = Math.sqrt(
+                    Math.pow(enemy.x - this.x, 2) + 
+                    Math.pow(enemy.y - this.y, 2)
+                );
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    this.target = enemy;
+                }
             }
         });
 
@@ -90,15 +132,26 @@ class Turret {
                 this.damage
             );
             this.playSound('shoot');
+            this.muzzleFlash = true;
+            this.muzzleFlashStart = Date.now();
             this.lastFired = Date.now();
         }
     }
 
     draw(ctx) {
-        ctx.fillStyle = '#00f';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw turret using image
+        const turretImg = document.getElementById('turretImg');
+        ctx.drawImage(turretImg, this.x - 20, this.y - 20, 40, 40);
+
+        if (this.muzzleFlash) {
+            // Draw muzzle flash
+            ctx.fillStyle = '#ffff00';
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
 
         if (this.target) {
             ctx.strokeStyle = '#0ff';
@@ -128,10 +181,9 @@ class Bullet {
     }
 
     draw(ctx) {
-        ctx.fillStyle = '#ff0';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw bullet using image
+        const bulletImg = document.getElementById('bulletImg');
+        ctx.drawImage(bulletImg, this.x - 5, this.y - 5, 10, 10);
     }
 
     checkCollision(enemy) {

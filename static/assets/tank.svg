@@ -1,6 +1,20 @@
 <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-    <rect x="5" y="10" width="30" height="20" fill="#cc0000"/>
-    <rect x="15" y="5" width="10" height="15" fill="#990000"/>
-    <circle cx="10" cy="30" r="5" fill="#333"/>
-    <circle cx="30" cy="30" r="5" fill="#333"/>
+    <!-- Tank body -->
+    <rect x="5" y="12" width="30" height="16" fill="#8B0000" rx="2"/>
+    <rect x="3" y="15" width="34" height="10" fill="#A52A2A" rx="1"/>
+    
+    <!-- Tank turret -->
+    <rect x="12" y="8" width="16" height="12" fill="#800000" rx="2"/>
+    <rect x="18" y="4" width="4" height="12" fill="#8B0000"/>
+    
+    <!-- Tank tracks -->
+    <rect x="3" y="25" width="34" height="4" fill="#4A4A4A" rx="1"/>
+    <circle cx="8" cy="27" r="3" fill="#333"/>
+    <circle cx="32" cy="27" r="3" fill="#333"/>
+    <circle cx="16" cy="27" r="3" fill="#333"/>
+    <circle cx="24" cy="27" r="3" fill="#333"/>
+    
+    <!-- Details -->
+    <rect x="7" y="14" width="2" height="8" fill="#600000"/>
+    <rect x="31" y="14" width="2" height="8" fill="#600000"/>
 </svg>

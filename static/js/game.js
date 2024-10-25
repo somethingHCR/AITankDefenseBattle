@@ -3,6 +3,7 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.gameLoop = this.gameLoop.bind(this);
+        this.createBullet = this.createBullet.bind(this);
         this.tileSize = 40;
         this.money = 300;
         this.score = 0;
@@ -17,9 +18,27 @@ class Game {
         this.mouseX = 0;
         this.mouseY = 0;
         
+        this.loadImages();
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
+    }
+
+    loadImages() {
+        // Create and load images
+        const images = {
+            'tankImg': '/static/assets/tank.svg',
+            'turretImg': '/static/assets/turret.svg',
+            'bulletImg': '/static/assets/bullet.svg'
+        };
+
+        Object.entries(images).forEach(([id, src]) => {
+            const img = document.createElement('img');
+            img.id = id;
+            img.src = src;
+            img.style.display = 'none';
+            document.body.appendChild(img);
+        });
     }
 
     generatePath() {
@@ -94,11 +113,11 @@ class Game {
             
             // Check collision with enemies
             for (let enemy of this.enemies) {
-                if (bullet.checkCollision(enemy)) {
+                if (!enemy.exploding && bullet.checkCollision(enemy)) {
                     enemy.takeDamage(bullet.damage);
-                    if (enemy.isDead) {
+                    if (enemy.exploding) {
                         this.score += 10;
-                        this.money += 20;
+                        this.money += 25; // Increased from 20 to 25
                         this.updateMoneyDisplay();
                         document.getElementById('score').textContent = this.score;
                     }
@@ -111,7 +130,7 @@ class Game {
 
         // Draw turret placement preview
         if (this.selectedTurret) {
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 100;
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 75;
             this.ctx.globalAlpha = 0.5;
             this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
             this.ctx.beginPath();
@@ -162,14 +181,14 @@ class Game {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
-        if (this.selectedTurret && this.money >= 100) {
+        if (this.selectedTurret && this.money >= 75) {
             // Check if placement is valid (not on path)
             if (!this.isOnPath(x, y)) {
-                this.money -= 100;
+                this.money -= 75;
                 this.updateMoneyDisplay();
                 this.turrets.push(new Turret(
                     x, y,
-                    this.createBullet.bind(this),
+                    this.createBullet,
                     this.audioManager.playSound.bind(this.audioManager)
                 ));
                 this.audioManager.playSound('place');
@@ -179,7 +198,7 @@ class Game {
     }
 
     isOnPath(x, y) {
-        const bufferSize = this.tileSize * 0.75; // Buffer zone around the path
+        const bufferSize = this.tileSize * 0.75;
         const tileX = x / this.tileSize;
         const tileY = y / this.tileSize;
         
@@ -188,7 +207,6 @@ class Game {
             const start = this.path[i];
             const end = this.path[i + 1];
             
-            // Calculate distance to line segment
             const A = x - start.x * this.tileSize;
             const B = y - start.y * this.tileSize;
             const C = end.x * this.tileSize - start.x * this.tileSize;

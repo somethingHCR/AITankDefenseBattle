@@ -1,3 +1,10 @@
 <svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="5" cy="5" r="4" fill="#ffff00" stroke="#cc9900" stroke-width="1"/>
+    <!-- Bullet core -->
+    <circle cx="5" cy="5" r="3" fill="#ffcc00"/>
+    
+    <!-- Bullet glow -->
+    <circle cx="5" cy="5" r="4" fill="#ffeb99" opacity="0.6"/>
+    
+    <!-- Bullet highlight -->
+    <circle cx="4" cy="4" r="1" fill="#ffffff" opacity="0.8"/>
 </svg>
