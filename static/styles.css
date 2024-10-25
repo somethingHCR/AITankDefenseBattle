@@ -1,0 +1,17 @@
+#gameCanvas {
+    border: 2px solid var(--bs-secondary);
+    background-color: var(--bs-dark);
+}
+
+.game-stats {
+    background-color: var(--bs-dark);
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.turret-shop {
+    background-color: var(--bs-dark);
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
