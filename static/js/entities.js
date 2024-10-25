@@ -5,7 +5,7 @@ class Enemy {
         this.path = path;
         this.tileSize = tileSize;
         this.currentPathIndex = 0;
-        this.speed = 2.5; // Increased speed from 2 to 2.5
+        this.speed = 2.5;
         this.health = 100;
         this.maxHealth = 100;
         this.isDead = false;
@@ -46,7 +46,6 @@ class Enemy {
 
     draw(ctx) {
         if (this.exploding) {
-            // Draw explosion
             const explosionProgress = this.explosionFrame / this.explosionMaxFrames;
             const radius = 30 * explosionProgress;
             const alpha = 1 - explosionProgress;
@@ -65,11 +64,9 @@ class Enemy {
             return;
         }
 
-        // Draw tank using image
         const tankImg = document.getElementById('tankImg');
         ctx.drawImage(tankImg, this.x - 20, this.y - 20, 40, 40);
 
-        // Draw health bar
         ctx.fillStyle = '#0f0';
         ctx.fillRect(this.x - 15, this.y - 25, 
             (30 * this.health / this.maxHealth), 5);
@@ -90,7 +87,7 @@ class Turret {
         this.y = y;
         this.range = 150;
         this.damage = 25;
-        this.fireRate = 1000; // milliseconds
+        this.fireRate = 1000;
         this.lastFired = 0;
         this.target = null;
         this.createBullet = createBullet;
@@ -98,15 +95,14 @@ class Turret {
         this.muzzleFlash = false;
         this.muzzleFlashDuration = 100;
         this.muzzleFlashStart = 0;
+        this.rotation = 0; // Added rotation property
     }
 
     update(enemies) {
-        // Update muzzle flash
         if (this.muzzleFlash && Date.now() - this.muzzleFlashStart > this.muzzleFlashDuration) {
             this.muzzleFlash = false;
         }
 
-        // Find closest enemy in range
         this.target = null;
         let closestDistance = this.range;
         
@@ -124,42 +120,47 @@ class Turret {
             }
         });
 
-        // Fire at target
-        if (this.target && Date.now() - this.lastFired >= this.fireRate) {
-            this.createBullet(
-                this.x, this.y,
-                this.target.x, this.target.y,
-                this.damage
+        // Update rotation if there's a target
+        if (this.target) {
+            this.rotation = Math.atan2(
+                this.target.y - this.y,
+                this.target.x - this.x
             );
-            this.playSound('shoot');
-            this.muzzleFlash = true;
-            this.muzzleFlashStart = Date.now();
-            this.lastFired = Date.now();
+        }
+
+        if (this.target && Date.now() - this.lastFired >= this.fireRate) {
+            if (typeof this.createBullet === 'function') {
+                this.createBullet(
+                    this.x, this.y,
+                    this.target.x, this.target.y,
+                    this.damage
+                );
+                this.playSound('shoot');
+                this.muzzleFlash = true;
+                this.muzzleFlashStart = Date.now();
+                this.lastFired = Date.now();
+            }
         }
     }
 
     draw(ctx) {
-        // Draw turret using image
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        
         const turretImg = document.getElementById('turretImg');
-        ctx.drawImage(turretImg, this.x - 20, this.y - 20, 40, 40);
+        ctx.drawImage(turretImg, -20, -20, 40, 40);
 
         if (this.muzzleFlash) {
-            // Draw muzzle flash
             ctx.fillStyle = '#ffff00';
             ctx.globalAlpha = 0.7;
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
             ctx.fill();
             ctx.globalAlpha = 1;
         }
 
-        if (this.target) {
-            ctx.strokeStyle = '#0ff';
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y);
-            ctx.lineTo(this.target.x, this.target.y);
-            ctx.stroke();
-        }
+        ctx.restore();
     }
 }
 
@@ -181,7 +182,6 @@ class Bullet {
     }
 
     draw(ctx) {
-        // Draw bullet using image
         const bulletImg = document.getElementById('bulletImg');
         ctx.drawImage(bulletImg, this.x - 5, this.y - 5, 10, 10);
     }
