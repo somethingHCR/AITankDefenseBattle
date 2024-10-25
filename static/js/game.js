@@ -25,7 +25,6 @@ class Game {
     }
 
     loadImages() {
-        // Create and load images
         const images = {
             'tankImg': '/static/assets/tank.svg',
             'turretImg': '/static/assets/turret.svg',
@@ -42,7 +41,6 @@ class Game {
     }
 
     generatePath() {
-        // Simple path definition: array of coordinates
         return [
             {x: 0, y: 3},
             {x: 10, y: 3},
@@ -84,10 +82,8 @@ class Game {
     gameLoop() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw path
         this.drawPath();
         
-        // Update and draw enemies
         this.enemies = this.enemies.filter(enemy => {
             enemy.update();
             enemy.draw(this.ctx);
@@ -100,24 +96,21 @@ class Game {
             return !enemy.isDead;
         });
 
-        // Update and draw turrets
         this.turrets.forEach(turret => {
             turret.update(this.enemies);
             turret.draw(this.ctx);
         });
 
-        // Update and draw bullets
         this.bullets = this.bullets.filter(bullet => {
             bullet.update();
             bullet.draw(this.ctx);
             
-            // Check collision with enemies
             for (let enemy of this.enemies) {
                 if (!enemy.exploding && bullet.checkCollision(enemy)) {
                     enemy.takeDamage(bullet.damage);
                     if (enemy.exploding) {
                         this.score += 10;
-                        this.money += 25; // Increased from 20 to 25
+                        this.money += 25;
                         this.updateMoneyDisplay();
                         document.getElementById('score').textContent = this.score;
                     }
@@ -128,7 +121,6 @@ class Game {
             return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
         });
 
-        // Draw turret placement preview
         if (this.selectedTurret) {
             const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 75;
             this.ctx.globalAlpha = 0.5;
@@ -139,14 +131,12 @@ class Game {
             this.ctx.globalAlpha = 1.0;
         }
 
-        // Check if wave is complete
         if (this.enemies.length === 0) {
             this.wave++;
             document.getElementById('wave').textContent = this.wave;
             this.spawnWave();
         }
 
-        // Check game over
         if (this.lives <= 0) {
             alert('Game Over! Score: ' + this.score);
             location.reload();
@@ -182,13 +172,12 @@ class Game {
         const y = event.clientY - rect.top;
         
         if (this.selectedTurret && this.money >= 75) {
-            // Check if placement is valid (not on path)
             if (!this.isOnPath(x, y)) {
                 this.money -= 75;
                 this.updateMoneyDisplay();
                 this.turrets.push(new Turret(
                     x, y,
-                    this.createBullet,
+                    this.createBullet.bind(this),
                     this.audioManager.playSound.bind(this.audioManager)
                 ));
                 this.audioManager.playSound('place');
@@ -202,7 +191,6 @@ class Game {
         const tileX = x / this.tileSize;
         const tileY = y / this.tileSize;
         
-        // Check each path segment
         for (let i = 0; i < this.path.length - 1; i++) {
             const start = this.path[i];
             const end = this.path[i + 1];
@@ -249,7 +237,6 @@ class Game {
     }
 }
 
-// Start the game when the page loads
 window.addEventListener('load', () => {
     const game = new Game();
     game.start();

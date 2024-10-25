@@ -95,7 +95,7 @@ class Turret {
         this.muzzleFlash = false;
         this.muzzleFlashDuration = 100;
         this.muzzleFlashStart = 0;
-        this.rotation = 0; // Added rotation property
+        this.rotation = 0;
     }
 
     update(enemies) {
@@ -120,12 +120,12 @@ class Turret {
             }
         });
 
-        // Update rotation if there's a target
+        // Update rotation if there's a target, adding Math.PI/2 to correct the angle
         if (this.target) {
             this.rotation = Math.atan2(
                 this.target.y - this.y,
                 this.target.x - this.x
-            );
+            ) + Math.PI/2;
         }
 
         if (this.target && Date.now() - this.lastFired >= this.fireRate) {
