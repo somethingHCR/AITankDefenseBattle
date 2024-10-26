@@ -4,13 +4,11 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.gameLoop = this.gameLoop.bind(this);
         this.createBullet = this.createBullet.bind(this);
-        this.handleClick = this.handleClick.bind(this);
-        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.tileSize = 40;
         this.money = 300;
         this.score = 0;
         this.lives = 10;
-        this.wave = 0;
+        this.wave = 0;  // Start at 0 since spawnWave will increment it
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
@@ -21,51 +19,10 @@ class Game {
         this.mouseY = 0;
         this.waveInProgress = false;
         
-        this.turretTypes = {
-            'basic': { 
-                cost: 75, 
-                name: 'Basic Turret', 
-                color: '#1a75ff',
-                damage: 25,
-                range: 150,
-                fireRate: 1000,
-                description: 'Balanced damage and fire rate' 
-            },
-            'sniper': { 
-                cost: 150, 
-                name: 'Sniper Turret', 
-                color: '#ff3333',
-                damage: 75,
-                range: 250,
-                fireRate: 2000,
-                description: 'High damage, long range, slow fire rate' 
-            },
-            'rapid': { 
-                cost: 100, 
-                name: 'Rapid Turret', 
-                color: '#33cc33',
-                damage: 10,
-                range: 120,
-                fireRate: 400,
-                description: 'Low damage, high fire rate' 
-            },
-            'splash': { 
-                cost: 200, 
-                name: 'Splash Turret', 
-                color: '#ff9933',
-                damage: 20,
-                range: 130,
-                fireRate: 1500,
-                splashRadius: 50,
-                description: 'Area damage' 
-            }
-        };
-        
         this.loadImages();
-        this.canvas.addEventListener('click', this.handleClick);
-        this.canvas.addEventListener('mousemove', this.handleMouseMove);
+        this.canvas.addEventListener('click', this.handleClick.bind(this));
+        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
-        this.updateTurretShop();
     }
 
     loadImages() {
@@ -81,19 +38,6 @@ class Game {
             img.src = src;
             img.style.display = 'none';
             document.body.appendChild(img);
-        });
-    }
-
-    updateTurretShop() {
-        const shop = document.querySelector('.turret-shop');
-        shop.innerHTML = '<h3>Turret Shop</h3>';
-        
-        Object.entries(this.turretTypes).forEach(([type, info]) => {
-            const button = document.createElement('button');
-            button.className = 'btn btn-secondary mb-2 w-100';
-            button.onclick = () => this.selectTurret(type);
-            button.innerHTML = `${info.name} ($${info.cost})<br><small>${info.description}</small>`;
-            shop.appendChild(button);
         });
     }
 
@@ -117,7 +61,7 @@ class Game {
         if (this.waveInProgress) return;
         
         this.waveInProgress = true;
-        this.wave++;
+        this.wave++;  // Increment wave count when starting new wave
         document.getElementById('wave').textContent = this.wave;
         
         const enemyCount = 5 + this.wave * 2;
@@ -130,7 +74,6 @@ class Game {
                     this.path,
                     this.tileSize
                 );
-                enemy.health = enemy.maxHealth = 100 + (this.wave - 1) * 20;
                 this.enemies.push(enemy);
             }, i * 1000);
         }
@@ -140,9 +83,8 @@ class Game {
         document.getElementById('money').textContent = this.money;
     }
 
-    createBullet(x, y, targetX, targetY, damage, splashRadius = 0) {
-        const bullet = new Bullet(x, y, targetX, targetY, damage, splashRadius);
-        this.bullets.push(bullet);
+    createBullet(x, y, targetX, targetY, damage) {
+        this.bullets.push(new Bullet(x, y, targetX, targetY, damage));
     }
 
     gameLoop() {
@@ -171,57 +113,29 @@ class Game {
             bullet.update();
             bullet.draw(this.ctx);
             
-            let hitEnemy = false;
-            
             for (let enemy of this.enemies) {
                 if (!enemy.exploding && bullet.checkCollision(enemy)) {
                     enemy.takeDamage(bullet.damage);
-                    
-                    if (bullet.splashRadius > 0) {
-                        // Apply splash damage to nearby enemies
-                        this.enemies.forEach(otherEnemy => {
-                            if (otherEnemy !== enemy && !otherEnemy.exploding) {
-                                const distance = Math.sqrt(
-                                    Math.pow(enemy.x - otherEnemy.x, 2) + 
-                                    Math.pow(enemy.y - otherEnemy.y, 2)
-                                );
-                                if (distance < bullet.splashRadius) {
-                                    const splashDamage = bullet.damage * (1 - distance / bullet.splashRadius);
-                                    otherEnemy.takeDamage(splashDamage);
-                                }
-                            }
-                        });
-                    }
-                    
                     if (enemy.exploding) {
                         this.score += 10;
                         this.money += 25;
                         this.updateMoneyDisplay();
                         document.getElementById('score').textContent = this.score;
                     }
-                    hitEnemy = true;
-                    break;
+                    return false;
                 }
             }
             
-            return !hitEnemy && !bullet.isOffscreen(this.canvas.width, this.canvas.height);
+            return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
         });
 
         if (this.selectedTurret) {
-            const turretType = this.turretTypes[this.selectedTurret];
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= turretType.cost;
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 75;
             this.ctx.globalAlpha = 0.5;
-            this.ctx.fillStyle = canPlace ? turretType.color : '#f00';
+            this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
             this.ctx.beginPath();
             this.ctx.arc(this.mouseX, this.mouseY, 20, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Show range indicator while placing
-            this.ctx.strokeStyle = turretType.color;
-            this.ctx.beginPath();
-            this.ctx.arc(this.mouseX, this.mouseY, turretType.range, 0, Math.PI * 2);
-            this.ctx.stroke();
-            
             this.ctx.globalAlpha = 1.0;
         }
 
@@ -264,19 +178,15 @@ class Game {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
-        if (this.selectedTurret) {
-            const turretType = this.turretTypes[this.selectedTurret];
-            if (this.money >= turretType.cost && !this.isOnPath(x, y)) {
-                this.money -= turretType.cost;
+        if (this.selectedTurret && this.money >= 75) {
+            if (!this.isOnPath(x, y)) {
+                this.money -= 75;
                 this.updateMoneyDisplay();
-                
                 const turret = new Turret(
                     x, y,
-                    this.selectedTurret,
                     this.createBullet.bind(this),
                     this.audioManager.playSound.bind(this.audioManager)
                 );
-                
                 this.turrets.push(turret);
                 this.audioManager.playSound('place');
                 this.selectedTurret = null;
@@ -286,6 +196,8 @@ class Game {
 
     isOnPath(x, y) {
         const bufferSize = this.tileSize * 0.75;
+        const tileX = x / this.tileSize;
+        const tileY = y / this.tileSize;
         
         for (let i = 0; i < this.path.length - 1; i++) {
             const start = this.path[i];
