@@ -8,7 +8,7 @@ class Game {
         this.money = 300;
         this.score = 0;
         this.lives = 10;
-        this.wave = 0;  // Start at 0 since spawnWave will increment it
+        this.wave = 0;
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
@@ -29,6 +29,9 @@ class Game {
         const images = {
             'tankImg': '/static/assets/tank.svg',
             'turretImg': '/static/assets/turret.svg',
+            'laserTurretImg': '/static/assets/laser_turret.svg',
+            'instantTurretImg': '/static/assets/instant_kill_turret.svg',
+            'freezeTurretImg': '/static/assets/freeze_turret.svg',
             'bulletImg': '/static/assets/bullet.svg'
         };
 
@@ -61,7 +64,7 @@ class Game {
         if (this.waveInProgress) return;
         
         this.waveInProgress = true;
-        this.wave++;  // Increment wave count when starting new wave
+        this.wave++;
         document.getElementById('wave').textContent = this.wave;
         
         const enemyCount = 5 + this.wave * 2;
@@ -83,8 +86,18 @@ class Game {
         document.getElementById('money').textContent = this.money;
     }
 
-    createBullet(x, y, targetX, targetY, damage) {
-        this.bullets.push(new Bullet(x, y, targetX, targetY, damage));
+    createBullet(x, y, targetX, targetY, damage, type = 'basic') {
+        this.bullets.push(new Bullet(x, y, targetX, targetY, damage, type));
+    }
+
+    getTurretCost(type) {
+        const costs = {
+            'basic': 75,
+            'laser': 100,
+            'instant': 200,
+            'freeze': 25
+        };
+        return costs[type] || 75;
     }
 
     gameLoop() {
@@ -130,7 +143,9 @@ class Game {
         });
 
         if (this.selectedTurret) {
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= 75;
+            const cost = this.getTurretCost(this.selectedTurret);
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= cost;
+            
             this.ctx.globalAlpha = 0.5;
             this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
             this.ctx.beginPath();
@@ -178,13 +193,15 @@ class Game {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
-        if (this.selectedTurret && this.money >= 75) {
-            if (!this.isOnPath(x, y)) {
-                this.money -= 75;
+        if (this.selectedTurret) {
+            const cost = this.getTurretCost(this.selectedTurret);
+            if (this.money >= cost && !this.isOnPath(x, y)) {
+                this.money -= cost;
                 this.updateMoneyDisplay();
                 const turret = new Turret(
                     x, y,
-                    this.createBullet.bind(this),
+                    this.selectedTurret,
+                    this.createBullet.bind(this),  // Fix: Bind the createBullet method
                     this.audioManager.playSound.bind(this.audioManager)
                 );
                 this.turrets.push(turret);

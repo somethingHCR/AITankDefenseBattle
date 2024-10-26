@@ -1,0 +1,18 @@
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <!-- Base -->
+    <circle cx="20" cy="20" r="18" fill="#e6f7ff" stroke="#b3e0ff" stroke-width="2"/>
+    
+    <!-- Turret base -->
+    <circle cx="20" cy="20" r="12" fill="#b3e0ff"/>
+    
+    <!-- Gun barrel -->
+    <rect x="18" y="2" width="4" height="18" fill="#80ccff"/>
+    <rect x="17" y="8" width="6" height="4" fill="#4db8ff"/>
+    
+    <!-- Ice core -->
+    <circle cx="20" cy="20" r="8" fill="#ffffff"/>
+    <path d="M20 12 L20 28 M12 20 L28 20 M15 15 L25 25 M15 25 L25 15" 
+          stroke="#4db8ff" stroke-width="2" stroke-linecap="round">
+        <animate attributeName="stroke-width" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
+    </path>
+</svg>
