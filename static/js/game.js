@@ -22,10 +22,43 @@ class Game {
         this.waveInProgress = false;
         
         this.turretTypes = {
-            'basic': { cost: 75, name: 'Basic Turret', description: 'Balanced damage and fire rate' },
-            'sniper': { cost: 150, name: 'Sniper Turret', description: 'High damage, long range, slow fire rate' },
-            'rapid': { cost: 100, name: 'Rapid Turret', description: 'Low damage, high fire rate' },
-            'splash': { cost: 200, name: 'Splash Turret', description: 'Area damage' }
+            'basic': { 
+                cost: 75, 
+                name: 'Basic Turret', 
+                color: '#1a75ff',
+                damage: 25,
+                range: 150,
+                fireRate: 1000,
+                description: 'Balanced damage and fire rate' 
+            },
+            'sniper': { 
+                cost: 150, 
+                name: 'Sniper Turret', 
+                color: '#ff3333',
+                damage: 75,
+                range: 250,
+                fireRate: 2000,
+                description: 'High damage, long range, slow fire rate' 
+            },
+            'rapid': { 
+                cost: 100, 
+                name: 'Rapid Turret', 
+                color: '#33cc33',
+                damage: 10,
+                range: 120,
+                fireRate: 400,
+                description: 'Low damage, high fire rate' 
+            },
+            'splash': { 
+                cost: 200, 
+                name: 'Splash Turret', 
+                color: '#ff9933',
+                damage: 20,
+                range: 130,
+                fireRate: 1500,
+                splashRadius: 50,
+                description: 'Area damage' 
+            }
         };
         
         this.loadImages();
@@ -108,7 +141,8 @@ class Game {
     }
 
     createBullet(x, y, targetX, targetY, damage, splashRadius = 0) {
-        this.bullets.push(new Bullet(x, y, targetX, targetY, damage, splashRadius));
+        const bullet = new Bullet(x, y, targetX, targetY, damage, splashRadius);
+        this.bullets.push(bullet);
     }
 
     gameLoop() {
@@ -174,13 +208,20 @@ class Game {
         });
 
         if (this.selectedTurret) {
-            const cost = this.turretTypes[this.selectedTurret].cost;
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= cost;
+            const turretType = this.turretTypes[this.selectedTurret];
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= turretType.cost;
             this.ctx.globalAlpha = 0.5;
-            this.ctx.fillStyle = canPlace ? this.getTurretColor(this.selectedTurret) : '#f00';
+            this.ctx.fillStyle = canPlace ? turretType.color : '#f00';
             this.ctx.beginPath();
             this.ctx.arc(this.mouseX, this.mouseY, 20, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            // Show range indicator while placing
+            this.ctx.strokeStyle = turretType.color;
+            this.ctx.beginPath();
+            this.ctx.arc(this.mouseX, this.mouseY, turretType.range, 0, Math.PI * 2);
+            this.ctx.stroke();
+            
             this.ctx.globalAlpha = 1.0;
         }
 
@@ -196,16 +237,6 @@ class Game {
         }
 
         requestAnimationFrame(this.gameLoop);
-    }
-
-    getTurretColor(type) {
-        switch(type) {
-            case 'basic': return '#1a75ff';
-            case 'sniper': return '#ff3333';
-            case 'rapid': return '#33cc33';
-            case 'splash': return '#ff9933';
-            default: return '#1a75ff';
-        }
     }
 
     drawPath() {
@@ -234,16 +265,18 @@ class Game {
         const y = event.clientY - rect.top;
         
         if (this.selectedTurret) {
-            const cost = this.turretTypes[this.selectedTurret].cost;
-            if (this.money >= cost && !this.isOnPath(x, y)) {
-                this.money -= cost;
+            const turretType = this.turretTypes[this.selectedTurret];
+            if (this.money >= turretType.cost && !this.isOnPath(x, y)) {
+                this.money -= turretType.cost;
                 this.updateMoneyDisplay();
+                
                 const turret = new Turret(
                     x, y,
                     this.selectedTurret,
                     this.createBullet.bind(this),
                     this.audioManager.playSound.bind(this.audioManager)
                 );
+                
                 this.turrets.push(turret);
                 this.audioManager.playSound('place');
                 this.selectedTurret = null;
