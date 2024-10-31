@@ -12,7 +12,6 @@ class Game {
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
-        this.powerUps = [];
         this.path = this.generatePath();
         this.selectedTurret = null;
         this.selectedPlacedTurret = null;
@@ -21,40 +20,11 @@ class Game {
         this.mouseY = 0;
         this.waveInProgress = false;
         
-        // Power-up effects
-        this.doubleDamageActive = false;
-        this.rapidFireActive = false;
-        this.doubleDamageTimer = 0;
-        this.rapidFireTimer = 0;
-        
-        // Special weapons cooldowns
-        this.specialWeapons = {
-            nuclear: { cooldown: 0, maxCooldown: 600 },
-            freeze: { cooldown: 0, maxCooldown: 300 },
-            repair: { cooldown: 0, maxCooldown: 450 }
-        };
-        
         this.loadImages();
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
         this.setupTurretUpgradeUI();
-        this.setupSpecialWeaponsUI();
-    }
-
-    generatePath() {
-        return [
-            {x: 0, y: 3},
-            {x: 10, y: 3},
-            {x: 10, y: 8},
-            {x: 5, y: 8},
-            {x: 5, y: 12},
-            {x: 19, y: 12}
-        ];
-    }
-
-    createBullet(startX, startY, targetX, targetY, damage, type) {
-        this.bullets.push(new Bullet(startX, startY, targetX, targetY, damage, type));
     }
 
     loadImages() {
@@ -76,153 +46,15 @@ class Game {
         });
     }
 
-    setupSpecialWeaponsUI() {
-        const weaponsDiv = document.createElement('div');
-        weaponsDiv.className = 'special-weapons';
-        weaponsDiv.innerHTML = `
-            <h3>Special Weapons</h3>
-            <button class="btn btn-danger mb-2" onclick="game.useSpecialWeapon('nuclear')">
-                Nuclear Strike ($200)
-            </button>
-            <button class="btn btn-info mb-2" onclick="game.useSpecialWeapon('freeze')">
-                Freeze Field ($150)
-            </button>
-            <button class="btn btn-success mb-2" onclick="game.useSpecialWeapon('repair')">
-                Repair Kit ($100)
-            </button>
-        `;
-        document.querySelector('.turret-shop').appendChild(weaponsDiv);
-    }
-
-    useSpecialWeapon(type) {
-        const costs = {
-            nuclear: 200,
-            freeze: 150,
-            repair: 100
-        };
-
-        if (this.money < costs[type] || this.specialWeapons[type].cooldown > 0) return;
-
-        this.money -= costs[type];
-        this.updateMoneyDisplay();
-        this.specialWeapons[type].cooldown = this.specialWeapons[type].maxCooldown;
-
-        switch(type) {
-            case 'nuclear':
-                this.enemies.forEach(enemy => {
-                    enemy.takeDamage(500);
-                });
-                break;
-            case 'freeze':
-                this.enemies.forEach(enemy => {
-                    enemy.freeze();
-                });
-                break;
-            case 'repair':
-                this.turrets.forEach(turret => {
-                    turret.repair();
-                });
-                break;
-        }
-    }
-
-    spawnPowerUp() {
-        if (Math.random() < 0.01 && this.powerUps.length < 3) {
-            const types = ['doubleDamage', 'rapidFire', 'money'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            let validPosition = false;
-            let x, y;
-            
-            while (!validPosition) {
-                x = Math.random() * (this.canvas.width - 40) + 20;
-                y = Math.random() * (this.canvas.height - 40) + 20;
-                if (!this.isOnPath(x, y)) {
-                    validPosition = true;
-                }
-            }
-            
-            this.powerUps.push({
-                type,
-                x,
-                y,
-                radius: 15,
-                collected: false,
-                timeLeft: 600
-            });
-        }
-    }
-
-    drawPowerUps() {
-        this.powerUps.forEach(powerUp => {
-            if (powerUp.collected) return;
-            
-            this.ctx.beginPath();
-            this.ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
-            
-            switch(powerUp.type) {
-                case 'doubleDamage':
-                    this.ctx.fillStyle = '#ff4444';
-                    break;
-                case 'rapidFire':
-                    this.ctx.fillStyle = '#44ff44';
-                    break;
-                case 'money':
-                    this.ctx.fillStyle = '#ffff44';
-                    break;
-            }
-            
-            this.ctx.fill();
-            this.ctx.stroke();
-        });
-    }
-
-    collectPowerUp(x, y) {
-        this.powerUps.forEach(powerUp => {
-            if (!powerUp.collected) {
-                const dx = powerUp.x - x;
-                const dy = powerUp.y - y;
-                if (Math.sqrt(dx * dx + dy * dy) < powerUp.radius) {
-                    powerUp.collected = true;
-                    switch(powerUp.type) {
-                        case 'doubleDamage':
-                            this.doubleDamageActive = true;
-                            this.doubleDamageTimer = 300;
-                            break;
-                        case 'rapidFire':
-                            this.rapidFireActive = true;
-                            this.rapidFireTimer = 300;
-                            break;
-                        case 'money':
-                            this.money += 100;
-                            this.updateMoneyDisplay();
-                            break;
-                    }
-                }
-            }
-        });
-    }
-
-    updatePowerUpTimers() {
-        if (this.doubleDamageTimer > 0) {
-            this.doubleDamageTimer--;
-            if (this.doubleDamageTimer === 0) {
-                this.doubleDamageActive = false;
-            }
-        }
-
-        if (this.rapidFireTimer > 0) {
-            this.rapidFireTimer--;
-            if (this.rapidFireTimer === 0) {
-                this.rapidFireActive = false;
-            }
-        }
-
-        Object.values(this.specialWeapons).forEach(weapon => {
-            if (weapon.cooldown > 0) {
-                weapon.cooldown--;
-            }
-        });
+    generatePath() {
+        return [
+            {x: 0, y: 3},
+            {x: 10, y: 3},
+            {x: 10, y: 8},
+            {x: 5, y: 8},
+            {x: 5, y: 12},
+            {x: 19, y: 12}
+        ];
     }
 
     setupTurretUpgradeUI() {
@@ -281,7 +113,7 @@ class Game {
 
     start() {
         this.spawnWave();
-        requestAnimationFrame(this.gameLoop.bind(this));
+        requestAnimationFrame(this.gameLoop);
     }
 
     spawnWave() {
@@ -310,6 +142,10 @@ class Game {
         document.getElementById('money').textContent = this.money;
     }
 
+    createBullet(startX, startY, targetX, targetY, damage, type = 'basic') {
+        this.bullets.push(new Bullet(startX, startY, targetX, targetY, damage, type));
+    }
+
     getTurretCost(type) {
         const costs = {
             'basic': 75,
@@ -318,6 +154,88 @@ class Game {
             'freeze': 25
         };
         return costs[type] || 75;
+    }
+
+    gameLoop() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.drawPath();
+        
+        this.enemies = this.enemies.filter(enemy => {
+            enemy.update();
+            enemy.draw(this.ctx);
+            
+            if (enemy.reachedEnd) {
+                this.lives--;
+                document.getElementById('lives').textContent = this.lives;
+                return false;
+            }
+            return !enemy.isDead;
+        });
+
+        this.turrets.forEach(turret => {
+            turret.update(this.enemies);
+            turret.draw(this.ctx);
+        });
+
+        this.bullets = this.bullets.filter(bullet => {
+            bullet.update();
+            bullet.draw(this.ctx);
+            
+            for (let enemy of this.enemies) {
+                if (!enemy.exploding && bullet.checkCollision(enemy)) {
+                    enemy.takeDamage(bullet.damage);
+                    if (enemy.exploding) {
+                        this.score += 10;
+                        this.money += 25;
+                        this.updateMoneyDisplay();
+                        document.getElementById('score').textContent = this.score;
+                    }
+                    return false;
+                }
+            }
+            
+            return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
+        });
+
+        if (this.selectedTurret) {
+            const cost = this.getTurretCost(this.selectedTurret);
+            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= cost;
+            
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
+            this.ctx.beginPath();
+            this.ctx.arc(this.mouseX, this.mouseY, 20, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.globalAlpha = 1.0;
+        }
+
+        if (this.enemies.length === 0) {
+            this.waveInProgress = false;
+            setTimeout(() => this.spawnWave(), 3000);
+        }
+
+        if (this.lives <= 0) {
+            alert('Game Over! Score: ' + this.score);
+            location.reload();
+            return;
+        }
+
+        requestAnimationFrame(this.gameLoop);
+    }
+
+    drawPath() {
+        this.ctx.strokeStyle = '#666';
+        this.ctx.lineWidth = this.tileSize;
+        this.ctx.beginPath();
+        this.path.forEach((point, index) => {
+            if (index === 0) {
+                this.ctx.moveTo(point.x * this.tileSize, point.y * this.tileSize);
+            } else {
+                this.ctx.lineTo(point.x * this.tileSize, point.y * this.tileSize);
+            }
+        });
+        this.ctx.stroke();
     }
 
     handleMouseMove(event) {
@@ -330,9 +248,6 @@ class Game {
         const rect = this.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        
-        // Check for power-up collection
-        this.collectPowerUp(x, y);
         
         const clickedTurret = this.turrets.find(turret => {
             const dx = turret.x - x;
@@ -358,7 +273,9 @@ class Game {
                 this.money -= cost;
                 this.updateMoneyDisplay();
                 
-                const boundCreateBullet = this.createBullet.bind(this);
+                const boundCreateBullet = (startX, startY, targetX, targetY, damage, type) => {
+                    this.createBullet(startX, startY, targetX, targetY, damage, type);
+                };
                 
                 const turret = new Turret(
                     x, y,
@@ -426,111 +343,6 @@ class Game {
             this.selectedPlacedTurret = null;
             this.updateTurretUpgradeUI();
         }
-    }
-
-    gameLoop() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        this.drawPath();
-        this.spawnPowerUp();
-        this.drawPowerUps();
-        this.updatePowerUpTimers();
-        
-        this.enemies = this.enemies.filter(enemy => {
-            enemy.update();
-            enemy.draw(this.ctx);
-            
-            if (enemy.reachedEnd) {
-                this.lives--;
-                document.getElementById('lives').textContent = this.lives;
-                return false;
-            }
-            return !enemy.isDead;
-        });
-
-        this.turrets.forEach(turret => {
-            if (this.doubleDamageActive) {
-                turret.damageMultiplier = 2;
-            } else {
-                turret.damageMultiplier = 1;
-            }
-            
-            if (this.rapidFireActive) {
-                turret.fireRateMultiplier = 2;
-            } else {
-                turret.fireRateMultiplier = 1;
-            }
-            
-            turret.update(this.enemies);
-            turret.draw(this.ctx);
-        });
-
-        this.bullets = this.bullets.filter(bullet => {
-            bullet.update();
-            bullet.draw(this.ctx);
-            
-            for (let enemy of this.enemies) {
-                if (!enemy.exploding && bullet.checkCollision(enemy)) {
-                    enemy.takeDamage(bullet.damage);
-                    if (enemy.exploding) {
-                        this.score += 10;
-                        this.money += 25;
-                        this.updateMoneyDisplay();
-                        document.getElementById('score').textContent = this.score;
-                    }
-                    return false;
-                }
-            }
-            
-            return !bullet.isOffscreen(this.canvas.width, this.canvas.height);
-        });
-
-        if (this.selectedTurret) {
-            const cost = this.getTurretCost(this.selectedTurret);
-            const canPlace = !this.isOnPath(this.mouseX, this.mouseY) && this.money >= cost;
-            
-            this.ctx.globalAlpha = 0.5;
-            this.ctx.fillStyle = canPlace ? '#00f' : '#f00';
-            this.ctx.beginPath();
-            this.ctx.arc(this.mouseX, this.mouseY, 20, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.globalAlpha = 1.0;
-        }
-
-        this.powerUps = this.powerUps.filter(powerUp => {
-            if (!powerUp.collected) {
-                powerUp.timeLeft--;
-                return powerUp.timeLeft > 0;
-            }
-            return false;
-        });
-
-        if (this.enemies.length === 0) {
-            this.waveInProgress = false;
-            setTimeout(() => this.spawnWave(), 3000);
-        }
-
-        if (this.lives <= 0) {
-            alert('Game Over! Score: ' + this.score);
-            location.reload();
-            return;
-        }
-
-        requestAnimationFrame(this.gameLoop.bind(this));
-    }
-
-    drawPath() {
-        this.ctx.strokeStyle = '#666';
-        this.ctx.lineWidth = this.tileSize;
-        this.ctx.beginPath();
-        this.path.forEach((point, index) => {
-            if (index === 0) {
-                this.ctx.moveTo(point.x * this.tileSize, point.y * this.tileSize);
-            } else {
-                this.ctx.lineTo(point.x * this.tileSize, point.y * this.tileSize);
-            }
-        });
-        this.ctx.stroke();
     }
 }
 

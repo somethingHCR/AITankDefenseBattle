@@ -126,11 +126,6 @@ class Turret {
         this.muzzleFlashStart = 0;
         this.level = 1;
         this.maxLevel = 3;
-        this.damageMultiplier = 1;
-        this.fireRateMultiplier = 1;
-        this.health = 100;
-        this.maxHealth = 100;
-        this.lastFired = 0;
 
         this.setStats();
     }
@@ -175,18 +170,8 @@ class Turret {
         this.range = stats.range * levelMultiplier;
         this.cost = stats.cost;
         this.upgradeCost = stats.upgradeCost * this.level;
-    }
-
-    repair() {
-        this.health = this.maxHealth;
-    }
-
-    takeDamage(amount) {
-        this.health -= amount;
-        if (this.health <= 0) {
-            return true; // Turret destroyed
-        }
-        return false;
+        
+        this.lastFired = 0;
     }
 
     upgrade() {
@@ -218,59 +203,6 @@ class Turret {
         };
     }
 
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-        
-        const turretImg = document.getElementById(`${this.type}TurretImg`) || document.getElementById('turretImg');
-        ctx.drawImage(turretImg, -20, -20, 40, 40);
-
-        // Draw health bar
-        ctx.rotate(-this.rotation); // Reset rotation for health bar
-        ctx.fillStyle = '#0f0';
-        ctx.fillRect(-15, -25, (30 * this.health / this.maxHealth), 3);
-
-        if (this.target && this.type === 'laser') {
-            ctx.beginPath();
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 2;
-            const dx = this.target.x - this.x;
-            const dy = this.target.y - this.y;
-            const angle = Math.atan2(dy, dx) - this.rotation;
-            ctx.moveTo(0, 0);
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            ctx.lineTo(distance * Math.cos(angle), distance * Math.sin(angle));
-            ctx.stroke();
-            
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
-            ctx.lineWidth = 6;
-            ctx.stroke();
-        }
-
-        if (this.muzzleFlash) {
-            let flashColor;
-            switch(this.type) {
-                case 'instant':
-                    flashColor = '#ff0000';
-                    break;
-                case 'freeze':
-                    flashColor = '#00ffff';
-                    break;
-                default:
-                    flashColor = '#ffff00';
-            }
-            ctx.fillStyle = flashColor;
-            ctx.globalAlpha = 0.7;
-            ctx.beginPath();
-            ctx.arc(0, 0, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-        }
-
-        ctx.restore();
-    }
-
     update(enemies) {
         if (this.muzzleFlash && Date.now() - this.muzzleFlashStart > this.muzzleFlashDuration) {
             this.muzzleFlash = false;
@@ -300,30 +232,46 @@ class Turret {
             ) + Math.PI/2;
 
             const now = Date.now();
-            const adjustedFireRate = this.fireRate / this.fireRateMultiplier;
-            
-            if (now - this.lastFired >= adjustedFireRate) {
-                const adjustedDamage = this.damage * this.damageMultiplier;
-                
+            if (now - this.lastFired >= this.fireRate) {
                 switch(this.type) {
                     case 'laser':
                         if (this.target) {
-                            this.target.takeDamage(adjustedDamage);
+                            this.target.takeDamage(this.damage);
                         }
                         break;
                     case 'instant':
+                        if (typeof this.createBullet === 'function') {
+                            this.createBullet(
+                                this.x, this.y,
+                                this.target.x, this.target.y,
+                                this.damage,
+                                this.type
+                            );
+                            this.playSound('shoot');
+                            this.muzzleFlash = true;
+                            this.muzzleFlashStart = now;
+                        }
+                        break;
                     case 'freeze':
+                        if (typeof this.createBullet === 'function') {
+                            this.createBullet(
+                                this.x, this.y,
+                                this.target.x, this.target.y,
+                                this.damage,
+                                this.type
+                            );
+                            this.playSound('shoot');
+                            this.target.freeze();
+                        }
+                        break;
                     default:
                         if (typeof this.createBullet === 'function') {
                             this.createBullet(
                                 this.x, this.y,
                                 this.target.x, this.target.y,
-                                adjustedDamage,
+                                this.damage,
                                 this.type
                             );
-                            if (this.type === 'freeze') {
-                                this.target.freeze();
-                            }
                             this.playSound('shoot');
                             this.muzzleFlash = true;
                             this.muzzleFlashStart = now;
@@ -333,17 +281,67 @@ class Turret {
             }
         }
     }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        
+        const turretImg = document.getElementById(`${this.type}TurretImg`) || document.getElementById('turretImg');
+        ctx.drawImage(turretImg, -20, -20, 40, 40);
+
+        if (this.target) {
+            if (this.type === 'laser') {
+                ctx.beginPath();
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 2;
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const angle = Math.atan2(dy, dx) - this.rotation;
+                ctx.moveTo(0, 0);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                ctx.lineTo(distance * Math.cos(angle), distance * Math.sin(angle));
+                ctx.stroke();
+                
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+                ctx.lineWidth = 6;
+                ctx.stroke();
+            }
+        }
+
+        if (this.muzzleFlash) {
+            let flashColor;
+            switch(this.type) {
+                case 'instant':
+                    flashColor = '#ff0000';
+                    break;
+                case 'freeze':
+                    flashColor = '#00ffff';
+                    break;
+                default:
+                    flashColor = '#ffff00';
+            }
+            ctx.fillStyle = flashColor;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        ctx.restore();
+    }
 }
 
 class Bullet {
-    constructor(startX, startY, targetX, targetY, damage, type = 'basic') {
-        this.x = startX;
-        this.y = startY;
+    constructor(x, y, targetX, targetY, damage, type = 'basic') {
+        this.x = x;
+        this.y = y;
         this.type = type;
         this.speed = type === 'instant' ? 15 : 10;
         this.damage = damage;
         
-        const angle = Math.atan2(targetY - startY, targetX - startX);
+        const angle = Math.atan2(targetY - y, targetX - x);
         this.dx = Math.cos(angle) * this.speed;
         this.dy = Math.sin(angle) * this.speed;
     }

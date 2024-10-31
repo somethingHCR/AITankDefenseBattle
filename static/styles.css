@@ -16,16 +16,6 @@
     border-radius: 0.25rem;
 }
 
-.special-weapons {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--bs-secondary);
-}
-
-.special-weapons button {
-    width: 100%;
-}
-
 .turret-upgrade {
     position: absolute;
     background: var(--bs-dark);
