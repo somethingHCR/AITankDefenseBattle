@@ -1,0 +1,20 @@
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <!-- Base tank -->
+    <rect x="5" y="12" width="30" height="16" fill="#1C1C1C" rx="2"/>
+    <rect x="3" y="15" width="34" height="10" fill="#2F2F2F" rx="1"/>
+    
+    <!-- Shield elements -->
+    <path d="M3 15 Q20 10 37 15 L37 25 Q20 30 3 25 Z" fill="#404040" stroke="#666" stroke-width="1"/>
+    <path d="M10 12 Q20 8 30 12 L30 28 Q20 32 10 28 Z" fill="#333" stroke="#666" stroke-width="1"/>
+    
+    <!-- Armored turret -->
+    <rect x="15" y="8" width="10" height="14" fill="#1C1C1C" rx="2"/>
+    <rect x="18" y="4" width="4" height="12" fill="#2F2F2F"/>
+    
+    <!-- Reinforced tracks -->
+    <rect x="3" y="25" width="34" height="4" fill="#444" rx="1"/>
+    <circle cx="8" cy="27" r="3" fill="#333" stroke="#666"/>
+    <circle cx="32" cy="27" r="3" fill="#333" stroke="#666"/>
+    <circle cx="16" cy="27" r="3" fill="#333" stroke="#666"/>
+    <circle cx="24" cy="27" r="3" fill="#333" stroke="#666"/>
+</svg>

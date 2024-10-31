@@ -1,0 +1,25 @@
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <!-- Imposing body -->
+    <rect x="2" y="10" width="36" height="20" fill="#B8860B" rx="3"/>
+    <rect x="0" y="14" width="40" height="12" fill="#DAA520" rx="2"/>
+    
+    <!-- Crown-like turret -->
+    <path d="M12 8 L20 2 L28 8 L25 14 L15 14 Z" fill="#FFD700"/>
+    <rect x="15" y="8" width="10" height="12" fill="#DAA520"/>
+    <rect x="18" y="0" width="4" height="14" fill="#FFD700"/>
+    
+    <!-- Decorative spikes -->
+    <path d="M5 10 L8 6 L11 10" fill="#FFD700"/>
+    <path d="M29 10 L32 6 L35 10" fill="#FFD700"/>
+    
+    <!-- Heavy duty tracks -->
+    <rect x="0" y="24" width="40" height="6" fill="#8B4513" rx="2"/>
+    <circle cx="6" cy="27" r="4" fill="#654321" stroke="#FFD700"/>
+    <circle cx="34" cy="27" r="4" fill="#654321" stroke="#FFD700"/>
+    <circle cx="16" cy="27" r="4" fill="#654321" stroke="#FFD700"/>
+    <circle cx="24" cy="27" r="4" fill="#654321" stroke="#FFD700"/>
+    
+    <!-- Golden details -->
+    <rect x="4" y="12" width="3" height="16" fill="#FFD700"/>
+    <rect x="33" y="12" width="3" height="16" fill="#FFD700"/>
+</svg>

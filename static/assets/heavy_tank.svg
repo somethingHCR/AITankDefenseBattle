@@ -1,0 +1,20 @@
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <!-- Heavy armored body -->
+    <rect x="3" y="10" width="34" height="20" fill="#4B0082" rx="3"/>
+    <rect x="1" y="14" width="38" height="12" fill="#663399" rx="2"/>
+    
+    <!-- Reinforced turret -->
+    <rect x="10" y="6" width="20" height="16" fill="#4B0082" rx="3"/>
+    <rect x="17" y="2" width="6" height="14" fill="#663399"/>
+    
+    <!-- Heavy tracks -->
+    <rect x="1" y="24" width="38" height="6" fill="#333" rx="2"/>
+    <circle cx="6" cy="27" r="4" fill="#222"/>
+    <circle cx="34" cy="27" r="4" fill="#222"/>
+    <circle cx="16" cy="27" r="4" fill="#222"/>
+    <circle cx="24" cy="27" r="4" fill="#222"/>
+    
+    <!-- Armor plates -->
+    <rect x="5" y="12" width="4" height="16" fill="#800080"/>
+    <rect x="31" y="12" width="4" height="16" fill="#800080"/>
+</svg>

@@ -30,6 +30,29 @@ class Game {
         this.setupMapSelector();
     }
 
+    loadImages() {
+        const images = {
+            'regularTankImg': '/static/assets/regular_tank.svg',
+            'fastTankImg': '/static/assets/fast_tank.svg',
+            'heavyTankImg': '/static/assets/heavy_tank.svg',
+            'armoredTankImg': '/static/assets/armored_tank.svg',
+            'bossTankImg': '/static/assets/boss_tank.svg',
+            'turretImg': '/static/assets/turret.svg',
+            'laserTurretImg': '/static/assets/laser_turret.svg',
+            'instantTurretImg': '/static/assets/instant_kill_turret.svg',
+            'freezeTurretImg': '/static/assets/freeze_turret.svg',
+            'bulletImg': '/static/assets/bullet.svg'
+        };
+
+        Object.entries(images).forEach(([id, src]) => {
+            const img = document.createElement('img');
+            img.id = id;
+            img.src = src;
+            img.style.display = 'none';
+            document.body.appendChild(img);
+        });
+    }
+
     initializeMaps() {
         return [
             {
@@ -127,25 +150,6 @@ class Game {
         const buttons = document.querySelectorAll('.map-selector button');
         buttons.forEach((button, i) => {
             button.className = `btn ${i === index ? 'btn-primary' : 'btn-secondary'}`;
-        });
-    }
-
-    loadImages() {
-        const images = {
-            'tankImg': '/static/assets/tank.svg',
-            'turretImg': '/static/assets/turret.svg',
-            'laserTurretImg': '/static/assets/laser_turret.svg',
-            'instantTurretImg': '/static/assets/instant_kill_turret.svg',
-            'freezeTurretImg': '/static/assets/freeze_turret.svg',
-            'bulletImg': '/static/assets/bullet.svg'
-        };
-
-        Object.entries(images).forEach(([id, src]) => {
-            const img = document.createElement('img');
-            img.id = id;
-            img.src = src;
-            img.style.display = 'none';
-            document.body.appendChild(img);
         });
     }
 
@@ -310,8 +314,8 @@ class Game {
                 if (!enemy.exploding && bullet.checkCollision(enemy)) {
                     enemy.takeDamage(bullet.damage);
                     if (enemy.exploding) {
-                        this.score += 10;
-                        this.money += 25;
+                        this.score += enemy.score;
+                        this.money += enemy.reward;
                         this.updateMoneyDisplay();
                         document.getElementById('score').textContent = this.score;
                     }

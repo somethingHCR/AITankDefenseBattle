@@ -133,59 +133,15 @@ class Enemy {
             ctx.rotate(angle + Math.PI/2);
         }
 
-        const colors = {
-            'regular': '#8B0000',
-            'fast': '#006400',
-            'heavy': '#4B0082',
-            'armored': '#1C1C1C',
-            'boss': '#B8860B'
-        };
-
-        const baseColor = colors[this.type] || colors.regular;
-        
-        ctx.fillStyle = baseColor;
-        ctx.fillRect(-20, -8, 40, 16);
-        
-        ctx.fillStyle = this.type === 'boss' ? '#FFD700' : baseColor;
-        ctx.fillRect(-8, -12, 16, 24);
-        
-        ctx.fillStyle = '#333';
-        ctx.fillRect(-22, -10, 4, 20);
-        ctx.fillRect(18, -10, 4, 20);
-
-        switch(this.type) {
-            case 'fast':
-                ctx.beginPath();
-                ctx.moveTo(-20, -8);
-                ctx.lineTo(-25, 0);
-                ctx.lineTo(-20, 8);
-                ctx.fill();
-                break;
-            case 'heavy':
-                ctx.fillRect(-15, -12, 30, 4);
-                ctx.fillRect(-15, 8, 30, 4);
-                break;
-            case 'armored':
-                ctx.strokeStyle = '#444';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(-18, -6, 36, 12);
-                break;
-            case 'boss':
-                ctx.fillStyle = '#FFD700';
-                ctx.beginPath();
-                ctx.moveTo(-15, -12);
-                ctx.lineTo(-10, -18);
-                ctx.lineTo(-5, -12);
-                ctx.lineTo(0, -18);
-                ctx.lineTo(5, -12);
-                ctx.lineTo(10, -18);
-                ctx.lineTo(15, -12);
-                ctx.fill();
-                break;
+        const tankImgId = `${this.type}TankImg`;
+        const tankImg = document.getElementById(tankImgId);
+        if (tankImg) {
+            ctx.drawImage(tankImg, -20, -20, 40, 40);
         }
 
         ctx.restore();
 
+        // Health bar
         const healthBarWidth = 30;
         const healthPercentage = this.health / this.maxHealth;
         
@@ -197,6 +153,7 @@ class Enemy {
         ctx.fillRect(this.x - healthBarWidth/2, this.y - 25, 
             healthBarWidth * healthPercentage, 5);
 
+        // Freeze effect
         if (this.frozen) {
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 2;
@@ -225,6 +182,82 @@ class Enemy {
         this.frozen = true;
         this.frozenTimer = 60;
         this.speed = this.originalSpeed * 0.5;
+    }
+}
+
+class Bullet {
+    constructor(startX, startY, targetX, targetY, damage, type = 'basic') {
+        this.x = startX;
+        this.y = startY;
+        this.type = type;
+        this.speed = type === 'instant' ? 15 : 10;
+        this.damage = damage;
+        
+        const angle = Math.atan2(targetY - startY, targetX - startX);
+        this.dx = Math.cos(angle) * this.speed;
+        this.dy = Math.sin(angle) * this.speed;
+    }
+
+    update() {
+        this.x += this.dx;
+        this.y += this.dy;
+    }
+
+    draw(ctx) {
+        switch(this.type) {
+            case 'instant':
+                ctx.fillStyle = '#ff0000';
+                ctx.strokeStyle = '#ff6666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                break;
+            case 'freeze':
+                ctx.fillStyle = '#b3e0ff';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI * 2 * i) / 6;
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        this.x + Math.cos(angle) * 3,
+                        this.y + Math.sin(angle) * 3
+                    );
+                    ctx.lineTo(
+                        this.x + Math.cos(angle) * 6,
+                        this.y + Math.sin(angle) * 6
+                    );
+                    ctx.stroke();
+                }
+                break;
+            default:
+                const bulletImg = document.getElementById('bulletImg');
+                ctx.drawImage(bulletImg, this.x - 5, this.y - 5, 10, 10);
+        }
+    }
+
+    checkCollision(enemy) {
+        const distance = Math.sqrt(
+            Math.pow(enemy.x - this.x, 2) + 
+            Math.pow(enemy.y - this.y, 2)
+        );
+        return distance < 20;
+    }
+
+    isOffscreen(canvasWidth, canvasHeight) {
+        return (
+            this.x < 0 || 
+            this.x > canvasWidth ||
+            this.y < 0 || 
+            this.y > canvasHeight
+        );
     }
 }
 
@@ -356,7 +389,7 @@ class Turret {
                         }
                         break;
                     case 'instant':
-                        if (typeof this.createBullet === 'function') {
+                        if (this.createBullet) {
                             this.createBullet(
                                 this.x, this.y,
                                 this.target.x, this.target.y,
@@ -369,7 +402,7 @@ class Turret {
                         }
                         break;
                     case 'freeze':
-                        if (typeof this.createBullet === 'function') {
+                        if (this.createBullet) {
                             this.createBullet(
                                 this.x, this.y,
                                 this.target.x, this.target.y,
@@ -381,7 +414,7 @@ class Turret {
                         }
                         break;
                     default:
-                        if (typeof this.createBullet === 'function') {
+                        if (this.createBullet) {
                             this.createBullet(
                                 this.x, this.y,
                                 this.target.x, this.target.y,
@@ -446,81 +479,5 @@ class Turret {
         }
 
         ctx.restore();
-    }
-}
-
-class Bullet {
-    constructor(x, y, targetX, targetY, damage, type = 'basic') {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.speed = type === 'instant' ? 15 : 10;
-        this.damage = damage;
-        
-        const angle = Math.atan2(targetY - y, targetX - x);
-        this.dx = Math.cos(angle) * this.speed;
-        this.dy = Math.sin(angle) * this.speed;
-    }
-
-    update() {
-        this.x += this.dx;
-        this.y += this.dy;
-    }
-
-    draw(ctx) {
-        switch(this.type) {
-            case 'instant':
-                ctx.fillStyle = '#ff0000';
-                ctx.strokeStyle = '#ff6666';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                break;
-            case 'freeze':
-                ctx.fillStyle = '#b3e0ff';
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                
-                for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI * 2 * i) / 6;
-                    ctx.beginPath();
-                    ctx.moveTo(
-                        this.x + Math.cos(angle) * 3,
-                        this.y + Math.sin(angle) * 3
-                    );
-                    ctx.lineTo(
-                        this.x + Math.cos(angle) * 6,
-                        this.y + Math.sin(angle) * 6
-                    );
-                    ctx.stroke();
-                }
-                break;
-            default:
-                const bulletImg = document.getElementById('bulletImg');
-                ctx.drawImage(bulletImg, this.x - 5, this.y - 5, 10, 10);
-        }
-    }
-
-    checkCollision(enemy) {
-        const distance = Math.sqrt(
-            Math.pow(enemy.x - this.x, 2) + 
-            Math.pow(enemy.y - this.y, 2)
-        );
-        return distance < 20;
-    }
-
-    isOffscreen(canvasWidth, canvasHeight) {
-        return (
-            this.x < 0 || 
-            this.x > canvasWidth ||
-            this.y < 0 || 
-            this.y > canvasHeight
-        );
     }
 }
