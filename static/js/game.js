@@ -215,19 +215,51 @@ class Game {
         this.wave++;
         document.getElementById('wave').textContent = this.wave;
         
-        const enemyCount = 5 + this.wave * 2;
+        const enemyCount = 5 + Math.floor(this.wave * 1.5);
+        let enemiesSpawned = 0;
         
-        for (let i = 0; i < enemyCount; i++) {
-            setTimeout(() => {
-                const enemy = new Enemy(
-                    -1 * this.tileSize,
-                    this.path[0].y * this.tileSize,
-                    this.path,
-                    this.tileSize
-                );
-                this.enemies.push(enemy);
-            }, i * 1000);
+        const enemyTypes = [];
+        
+        if (this.wave % 5 === 0) {
+            enemyTypes.push('boss');
         }
+        
+        if (this.wave >= 2) enemyTypes.push('fast');
+        if (this.wave >= 3) enemyTypes.push('heavy');
+        if (this.wave >= 4) enemyTypes.push('armored');
+        
+        enemyTypes.push('regular');
+        
+        const spawnEnemy = () => {
+            if (enemiesSpawned >= enemyCount) {
+                return;
+            }
+
+            let enemyType;
+            if (enemiesSpawned === 0 && this.wave % 5 === 0) {
+                enemyType = 'boss';
+            } else {
+                enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            }
+
+            const enemy = new Enemy(
+                -1 * this.tileSize,
+                this.path[0].y * this.tileSize,
+                this.path,
+                this.tileSize,
+                enemyType
+            );
+            
+            this.enemies.push(enemy);
+            enemiesSpawned++;
+
+            if (enemiesSpawned < enemyCount) {
+                const delay = enemyType === 'boss' ? 2000 : 1000;
+                setTimeout(spawnEnemy, delay);
+            }
+        };
+
+        spawnEnemy();
     }
 
     updateMoneyDisplay() {

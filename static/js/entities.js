@@ -1,14 +1,11 @@
 class Enemy {
-    constructor(x, y, path, tileSize) {
+    constructor(x, y, path, tileSize, type = 'regular') {
         this.x = x;
         this.y = y;
         this.path = path;
         this.tileSize = tileSize;
         this.currentPathIndex = 0;
-        this.speed = 2.5;
-        this.originalSpeed = 2.5;
-        this.health = 100;
-        this.maxHealth = 100;
+        this.type = type;
         this.isDead = false;
         this.reachedEnd = false;
         this.exploding = false;
@@ -16,6 +13,57 @@ class Enemy {
         this.explosionMaxFrames = 10;
         this.frozen = false;
         this.frozenTimer = 0;
+        
+        this.setStats();
+    }
+
+    setStats() {
+        const baseStats = {
+            'regular': {
+                health: 100,
+                speed: 2.5,
+                armor: 1,
+                reward: 25,
+                score: 10
+            },
+            'fast': {
+                health: 60,
+                speed: 4,
+                armor: 0.8,
+                reward: 35,
+                score: 15
+            },
+            'heavy': {
+                health: 200,
+                speed: 1.5,
+                armor: 1.2,
+                reward: 40,
+                score: 20
+            },
+            'armored': {
+                health: 150,
+                speed: 2,
+                armor: 2,
+                reward: 45,
+                score: 25
+            },
+            'boss': {
+                health: 500,
+                speed: 1,
+                armor: 1.5,
+                reward: 100,
+                score: 50
+            }
+        };
+
+        const stats = baseStats[this.type] || baseStats.regular;
+        this.health = stats.health;
+        this.maxHealth = stats.health;
+        this.speed = stats.speed;
+        this.originalSpeed = stats.speed;
+        this.armor = stats.armor;
+        this.reward = stats.reward;
+        this.score = stats.score;
     }
 
     update() {
@@ -75,13 +123,80 @@ class Enemy {
             return;
         }
 
-        const tankImg = document.getElementById('tankImg');
-        ctx.drawImage(tankImg, this.x - 20, this.y - 20, 40, 40);
+        ctx.save();
+        ctx.translate(this.x, this.y);
 
-        ctx.fillStyle = this.frozen ? '#00ffff' : '#0f0';
-        ctx.fillRect(this.x - 15, this.y - 25, 
-            (30 * this.health / this.maxHealth), 5);
-            
+        if (this.currentPathIndex < this.path.length) {
+            const targetX = this.path[this.currentPathIndex].x * this.tileSize;
+            const targetY = this.path[this.currentPathIndex].y * this.tileSize;
+            const angle = Math.atan2(targetY - this.y, targetX - this.x);
+            ctx.rotate(angle + Math.PI/2);
+        }
+
+        const colors = {
+            'regular': '#8B0000',
+            'fast': '#006400',
+            'heavy': '#4B0082',
+            'armored': '#1C1C1C',
+            'boss': '#B8860B'
+        };
+
+        const baseColor = colors[this.type] || colors.regular;
+        
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(-20, -8, 40, 16);
+        
+        ctx.fillStyle = this.type === 'boss' ? '#FFD700' : baseColor;
+        ctx.fillRect(-8, -12, 16, 24);
+        
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-22, -10, 4, 20);
+        ctx.fillRect(18, -10, 4, 20);
+
+        switch(this.type) {
+            case 'fast':
+                ctx.beginPath();
+                ctx.moveTo(-20, -8);
+                ctx.lineTo(-25, 0);
+                ctx.lineTo(-20, 8);
+                ctx.fill();
+                break;
+            case 'heavy':
+                ctx.fillRect(-15, -12, 30, 4);
+                ctx.fillRect(-15, 8, 30, 4);
+                break;
+            case 'armored':
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-18, -6, 36, 12);
+                break;
+            case 'boss':
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.moveTo(-15, -12);
+                ctx.lineTo(-10, -18);
+                ctx.lineTo(-5, -12);
+                ctx.lineTo(0, -18);
+                ctx.lineTo(5, -12);
+                ctx.lineTo(10, -18);
+                ctx.lineTo(15, -12);
+                ctx.fill();
+                break;
+        }
+
+        ctx.restore();
+
+        const healthBarWidth = 30;
+        const healthPercentage = this.health / this.maxHealth;
+        
+        ctx.fillStyle = '#600';
+        ctx.fillRect(this.x - healthBarWidth/2, this.y - 25, healthBarWidth, 5);
+        
+        ctx.fillStyle = this.type === 'boss' ? '#FFD700' : 
+                       this.frozen ? '#00ffff' : '#0f0';
+        ctx.fillRect(this.x - healthBarWidth/2, this.y - 25, 
+            healthBarWidth * healthPercentage, 5);
+
         if (this.frozen) {
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 2;
@@ -98,7 +213,8 @@ class Enemy {
     }
 
     takeDamage(amount) {
-        this.health -= amount;
+        const actualDamage = amount / this.armor;
+        this.health -= actualDamage;
         if (this.health <= 0 && !this.exploding) {
             this.exploding = true;
             this.explosionFrame = 0;
