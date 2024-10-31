@@ -253,20 +253,14 @@ class Game {
             return Math.sqrt(dx * dx + dy * dy) < 20;
         });
 
-        if (this.selectedPlacedTurret) {
-            this.selectedPlacedTurret.isSelected = false;
-        }
-
         if (clickedTurret) {
             this.selectedPlacedTurret = clickedTurret;
-            this.selectedPlacedTurret.isSelected = true;
             this.selectedTurret = null;
             this.updateTurretUpgradeUI();
             return;
         }
 
         if (this.selectedPlacedTurret) {
-            this.selectedPlacedTurret.isSelected = false;
             this.selectedPlacedTurret = null;
             this.updateTurretUpgradeUI();
         }
@@ -279,7 +273,9 @@ class Game {
                 const turret = new Turret(
                     x, y,
                     this.selectedTurret,
-                    this.createBullet.bind(this),
+                    (startX, startY, targetX, targetY, damage, type) => {
+                        this.createBullet(startX, startY, targetX, targetY, damage, type);
+                    },
                     this.audioManager.playSound.bind(this.audioManager)
                 );
                 this.turrets.push(turret);
