@@ -12,7 +12,9 @@ class Game {
         this.enemies = [];
         this.turrets = [];
         this.bullets = [];
-        this.path = this.generatePath();
+        this.maps = this.initializeMaps();
+        this.currentMapIndex = 0;
+        this.path = this.maps[this.currentMapIndex].path;
         this.selectedTurret = null;
         this.selectedPlacedTurret = null;
         this.audioManager = new AudioManager();
@@ -25,6 +27,107 @@ class Game {
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
         this.setupTurretUpgradeUI();
+        this.setupMapSelector();
+    }
+
+    initializeMaps() {
+        return [
+            {
+                name: "Classic",
+                path: [
+                    {x: 0, y: 3},
+                    {x: 10, y: 3},
+                    {x: 10, y: 8},
+                    {x: 5, y: 8},
+                    {x: 5, y: 12},
+                    {x: 19, y: 12}
+                ]
+            },
+            {
+                name: "Spiral",
+                path: [
+                    {x: 0, y: 2},
+                    {x: 17, y: 2},
+                    {x: 17, y: 13},
+                    {x: 2, y: 13},
+                    {x: 2, y: 4},
+                    {x: 15, y: 4},
+                    {x: 15, y: 11},
+                    {x: 4, y: 11},
+                    {x: 4, y: 6},
+                    {x: 19, y: 6}
+                ]
+            },
+            {
+                name: "Zigzag",
+                path: [
+                    {x: 0, y: 1},
+                    {x: 18, y: 1},
+                    {x: 18, y: 5},
+                    {x: 1, y: 5},
+                    {x: 1, y: 9},
+                    {x: 18, y: 9},
+                    {x: 18, y: 13},
+                    {x: 19, y: 13}
+                ]
+            },
+            {
+                name: "Cross",
+                path: [
+                    {x: 0, y: 7},
+                    {x: 8, y: 7},
+                    {x: 8, y: 1},
+                    {x: 11, y: 1},
+                    {x: 11, y: 13},
+                    {x: 14, y: 13},
+                    {x: 14, y: 7},
+                    {x: 19, y: 7}
+                ]
+            }
+        ];
+    }
+
+    setupMapSelector() {
+        const container = document.createElement('div');
+        container.className = 'map-selector';
+        container.innerHTML = `
+            <div class="btn-group mb-3" role="group">
+                ${this.maps.map((map, index) => `
+                    <button class="btn ${index === this.currentMapIndex ? 'btn-primary' : 'btn-secondary'}"
+                            onclick="game.selectMap(${index})">
+                        ${map.name}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        const gameCanvas = document.getElementById('gameCanvas');
+        gameCanvas.parentElement.insertBefore(container, gameCanvas);
+    }
+
+    selectMap(index) {
+        if (this.waveInProgress || this.enemies.length > 0) {
+            alert('Cannot change map during a wave!');
+            return;
+        }
+
+        this.currentMapIndex = index;
+        this.path = this.maps[index].path;
+        this.turrets = [];
+        this.bullets = [];
+        this.wave = 0;
+        this.money = 300;
+        this.score = 0;
+        this.lives = 10;
+        this.updateMoneyDisplay();
+        document.getElementById('score').textContent = this.score;
+        document.getElementById('lives').textContent = this.lives;
+        document.getElementById('wave').textContent = this.wave;
+
+        const buttons = document.querySelectorAll('.map-selector button');
+        buttons.forEach((button, i) => {
+            button.className = `btn ${i === index ? 'btn-primary' : 'btn-secondary'}`;
+        });
     }
 
     loadImages() {
@@ -44,17 +147,6 @@ class Game {
             img.style.display = 'none';
             document.body.appendChild(img);
         });
-    }
-
-    generatePath() {
-        return [
-            {x: 0, y: 3},
-            {x: 10, y: 3},
-            {x: 10, y: 8},
-            {x: 5, y: 8},
-            {x: 5, y: 12},
-            {x: 19, y: 12}
-        ];
     }
 
     setupTurretUpgradeUI() {
@@ -129,7 +221,7 @@ class Game {
             setTimeout(() => {
                 const enemy = new Enemy(
                     -1 * this.tileSize,
-                    3 * this.tileSize,
+                    this.path[0].y * this.tileSize,
                     this.path,
                     this.tileSize
                 );
@@ -293,8 +385,6 @@ class Game {
 
     isOnPath(x, y) {
         const bufferSize = this.tileSize * 0.75;
-        const tileX = x / this.tileSize;
-        const tileY = y / this.tileSize;
         
         for (let i = 0; i < this.path.length - 1; i++) {
             const start = this.path[i];

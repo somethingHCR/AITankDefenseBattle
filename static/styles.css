@@ -33,3 +33,16 @@
 .turret-upgrade button {
     width: 100%;
 }
+
+.map-selector {
+    margin-bottom: 1rem;
+}
+
+.map-selector .btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.map-selector button {
+    flex: 1;
+}
