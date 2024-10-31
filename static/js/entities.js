@@ -126,6 +126,7 @@ class Turret {
         this.muzzleFlashStart = 0;
         this.level = 1;
         this.maxLevel = 3;
+        this.isSelected = false;
 
         this.setStats();
     }
@@ -287,6 +288,18 @@ class Turret {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         
+        if (this.isSelected) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#00ff00';
+            ctx.shadowBlur = 15;
+            ctx.arc(0, 0, 25, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+        }
+
         const turretImg = document.getElementById(`${this.type}TurretImg`) || document.getElementById('turretImg');
         ctx.drawImage(turretImg, -20, -20, 40, 40);
 
@@ -328,6 +341,12 @@ class Turret {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '12px Arial';
+        ctx.fillText(this.level, 0, 0);
 
         ctx.restore();
     }
