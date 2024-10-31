@@ -62,7 +62,7 @@ class Game {
         upgradeDiv.id = 'turretUpgrade';
         upgradeDiv.className = 'turret-upgrade';
         upgradeDiv.style.display = 'none';
-        document.querySelector('.turret-shop').appendChild(upgradeDiv);
+        document.body.appendChild(upgradeDiv);
     }
 
     updateTurretUpgradeUI() {
@@ -74,17 +74,19 @@ class Game {
         }
 
         const upgradeInfo = this.selectedPlacedTurret.getUpgradeInfo();
+        upgradeDiv.style.left = `${this.selectedPlacedTurret.x + 30}px`;
+        upgradeDiv.style.top = `${this.selectedPlacedTurret.y - 30}px`;
         
         if (!upgradeInfo.canUpgrade) {
             upgradeDiv.innerHTML = `
-                <h4>Selected Turret (Max Level)</h4>
                 <p>Damage: ${this.selectedPlacedTurret.damage}</p>
                 <p>Fire Rate: ${(1000 / this.selectedPlacedTurret.fireRate).toFixed(1)} shots/sec</p>
                 <p>Range: ${this.selectedPlacedTurret.range}</p>
+                <p class="text-warning">Max Level Reached</p>
             `;
         } else {
             upgradeDiv.innerHTML = `
-                <h4>Selected Turret (Level ${this.selectedPlacedTurret.level})</h4>
+                <p>Level ${this.selectedPlacedTurret.level}</p>
                 <p>Damage: ${this.selectedPlacedTurret.damage} → ${upgradeInfo.nextLevel.damage}</p>
                 <p>Fire Rate: ${(1000 / this.selectedPlacedTurret.fireRate).toFixed(1)} → ${(1000 / upgradeInfo.nextLevel.fireRate).toFixed(1)} shots/sec</p>
                 <p>Range: ${this.selectedPlacedTurret.range} → ${upgradeInfo.nextLevel.range}</p>
@@ -140,8 +142,8 @@ class Game {
         document.getElementById('money').textContent = this.money;
     }
 
-    createBullet(x, y, targetX, targetY, damage, type = 'basic') {
-        this.bullets.push(new Bullet(x, y, targetX, targetY, damage, type));
+    createBullet(startX, startY, targetX, targetY, damage, type = 'basic') {
+        this.bullets.push(new Bullet(startX, startY, targetX, targetY, damage, type));
     }
 
     getTurretCost(type) {
@@ -270,14 +272,18 @@ class Game {
             if (this.money >= cost && !this.isOnPath(x, y)) {
                 this.money -= cost;
                 this.updateMoneyDisplay();
+                
+                const boundCreateBullet = (startX, startY, targetX, targetY, damage, type) => {
+                    this.createBullet(startX, startY, targetX, targetY, damage, type);
+                };
+                
                 const turret = new Turret(
                     x, y,
                     this.selectedTurret,
-                    (startX, startY, targetX, targetY, damage, type) => {
-                        this.createBullet(startX, startY, targetX, targetY, damage, type);
-                    },
+                    boundCreateBullet,
                     this.audioManager.playSound.bind(this.audioManager)
                 );
+                
                 this.turrets.push(turret);
                 this.audioManager.playSound('place');
                 this.selectedTurret = null;
@@ -333,6 +339,10 @@ class Game {
 
     selectTurret(type) {
         this.selectedTurret = type;
+        if (this.selectedPlacedTurret) {
+            this.selectedPlacedTurret = null;
+            this.updateTurretUpgradeUI();
+        }
     }
 }
 
