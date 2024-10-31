@@ -14,6 +14,7 @@ class Game {
         this.bullets = [];
         this.path = this.generatePath();
         this.selectedTurret = null;
+        this.selectedPlacedTurret = null;
         this.audioManager = new AudioManager();
         this.mouseX = 0;
         this.mouseY = 0;
@@ -23,6 +24,7 @@ class Game {
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.updateMoneyDisplay();
+        this.setupTurretUpgradeUI();
     }
 
     loadImages() {
@@ -53,6 +55,58 @@ class Game {
             {x: 5, y: 12},
             {x: 19, y: 12}
         ];
+    }
+
+    setupTurretUpgradeUI() {
+        const upgradeDiv = document.createElement('div');
+        upgradeDiv.id = 'turretUpgrade';
+        upgradeDiv.className = 'turret-upgrade';
+        upgradeDiv.style.display = 'none';
+        document.querySelector('.turret-shop').appendChild(upgradeDiv);
+    }
+
+    updateTurretUpgradeUI() {
+        const upgradeDiv = document.getElementById('turretUpgrade');
+        
+        if (!this.selectedPlacedTurret) {
+            upgradeDiv.style.display = 'none';
+            return;
+        }
+
+        const upgradeInfo = this.selectedPlacedTurret.getUpgradeInfo();
+        
+        if (!upgradeInfo.canUpgrade) {
+            upgradeDiv.innerHTML = `
+                <h4>Selected Turret (Max Level)</h4>
+                <p>Damage: ${this.selectedPlacedTurret.damage}</p>
+                <p>Fire Rate: ${(1000 / this.selectedPlacedTurret.fireRate).toFixed(1)} shots/sec</p>
+                <p>Range: ${this.selectedPlacedTurret.range}</p>
+            `;
+        } else {
+            upgradeDiv.innerHTML = `
+                <h4>Selected Turret (Level ${this.selectedPlacedTurret.level})</h4>
+                <p>Damage: ${this.selectedPlacedTurret.damage} → ${upgradeInfo.nextLevel.damage}</p>
+                <p>Fire Rate: ${(1000 / this.selectedPlacedTurret.fireRate).toFixed(1)} → ${(1000 / upgradeInfo.nextLevel.fireRate).toFixed(1)} shots/sec</p>
+                <p>Range: ${this.selectedPlacedTurret.range} → ${upgradeInfo.nextLevel.range}</p>
+                <button class="btn btn-success" onclick="game.upgradeTurret()">
+                    Upgrade ($${upgradeInfo.cost})
+                </button>
+            `;
+        }
+        upgradeDiv.style.display = 'block';
+    }
+
+    upgradeTurret() {
+        if (!this.selectedPlacedTurret) return;
+
+        const upgradeInfo = this.selectedPlacedTurret.getUpgradeInfo();
+        if (upgradeInfo.canUpgrade && this.money >= upgradeInfo.cost) {
+            this.money -= upgradeInfo.cost;
+            this.selectedPlacedTurret.upgrade();
+            this.updateMoneyDisplay();
+            this.updateTurretUpgradeUI();
+            this.audioManager.playSound('place');
+        }
     }
 
     start() {
@@ -193,6 +247,24 @@ class Game {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
+        const clickedTurret = this.turrets.find(turret => {
+            const dx = turret.x - x;
+            const dy = turret.y - y;
+            return Math.sqrt(dx * dx + dy * dy) < 20;
+        });
+
+        if (clickedTurret) {
+            this.selectedPlacedTurret = clickedTurret;
+            this.selectedTurret = null;
+            this.updateTurretUpgradeUI();
+            return;
+        }
+
+        if (this.selectedPlacedTurret) {
+            this.selectedPlacedTurret = null;
+            this.updateTurretUpgradeUI();
+        }
+        
         if (this.selectedTurret) {
             const cost = this.getTurretCost(this.selectedTurret);
             if (this.money >= cost && !this.isOnPath(x, y)) {
@@ -201,7 +273,9 @@ class Game {
                 const turret = new Turret(
                     x, y,
                     this.selectedTurret,
-                    this.createBullet.bind(this),  // Fix: Bind the createBullet method
+                    (startX, startY, targetX, targetY, damage, type) => {
+                        this.createBullet(startX, startY, targetX, targetY, damage, type);
+                    },
                     this.audioManager.playSound.bind(this.audioManager)
                 );
                 this.turrets.push(turret);

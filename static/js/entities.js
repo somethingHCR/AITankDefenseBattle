@@ -78,12 +78,10 @@ class Enemy {
         const tankImg = document.getElementById('tankImg');
         ctx.drawImage(tankImg, this.x - 20, this.y - 20, 40, 40);
 
-        // Draw health bar
         ctx.fillStyle = this.frozen ? '#00ffff' : '#0f0';
         ctx.fillRect(this.x - 15, this.y - 25, 
             (30 * this.health / this.maxHealth), 5);
             
-        // Draw freeze effect
         if (this.frozen) {
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 2;
@@ -109,8 +107,8 @@ class Enemy {
 
     freeze() {
         this.frozen = true;
-        this.frozenTimer = 60;  // Freeze for 60 frames
-        this.speed = this.originalSpeed * 0.5;  // Slow down by 50%
+        this.frozenTimer = 60;
+        this.speed = this.originalSpeed * 0.5;
     }
 }
 
@@ -126,35 +124,83 @@ class Turret {
         this.muzzleFlash = false;
         this.muzzleFlashDuration = 100;
         this.muzzleFlashStart = 0;
+        this.level = 1;
+        this.maxLevel = 3;
 
-        // Set properties based on type
-        switch(type) {
-            case 'laser':
-                this.damage = 1;  // Per frame
-                this.fireRate = 0;  // Continuous
-                this.range = 200;
-                this.cost = 100;
-                break;
-            case 'instant':
-                this.damage = 1000;  // One-shot kill
-                this.fireRate = 2000;  // 2 seconds
-                this.range = 150;
-                this.cost = 200;
-                break;
-            case 'freeze':
-                this.damage = 5;
-                this.fireRate = 500;
-                this.range = 100;
-                this.cost = 25;
-                break;
-            default:  // Basic turret
-                this.damage = 25;
-                this.fireRate = 1000;
-                this.range = 150;
-                this.cost = 75;
-        }
+        this.setStats();
+    }
+
+    setStats() {
+        const baseStats = {
+            'laser': {
+                damage: 1,
+                fireRate: 0,
+                range: 200,
+                cost: 100,
+                upgradeCost: 75
+            },
+            'instant': {
+                damage: 1000,
+                fireRate: 2000,
+                range: 150,
+                cost: 200,
+                upgradeCost: 150
+            },
+            'freeze': {
+                damage: 5,
+                fireRate: 500,
+                range: 100,
+                cost: 25,
+                upgradeCost: 25
+            },
+            'basic': {
+                damage: 25,
+                fireRate: 1000,
+                range: 150,
+                cost: 75,
+                upgradeCost: 50
+            }
+        };
+
+        const stats = baseStats[this.type] || baseStats.basic;
+        const levelMultiplier = 1 + (this.level - 1) * 0.5;
+
+        this.damage = stats.damage * levelMultiplier;
+        this.fireRate = Math.max(stats.fireRate / levelMultiplier, 100);
+        this.range = stats.range * levelMultiplier;
+        this.cost = stats.cost;
+        this.upgradeCost = stats.upgradeCost * this.level;
         
         this.lastFired = 0;
+    }
+
+    upgrade() {
+        if (this.level < this.maxLevel) {
+            this.level++;
+            this.setStats();
+            return true;
+        }
+        return false;
+    }
+
+    getUpgradeInfo() {
+        if (this.level >= this.maxLevel) {
+            return {
+                canUpgrade: false,
+                cost: 0,
+                nextLevel: null
+            };
+        }
+
+        return {
+            canUpgrade: true,
+            cost: this.upgradeCost,
+            nextLevel: {
+                damage: this.damage * 1.5,
+                fireRate: this.fireRate * 0.75,
+                range: this.range * 1.5
+            }
+        };
     }
 
     update(enemies) {
@@ -244,7 +290,6 @@ class Turret {
         const turretImg = document.getElementById(`${this.type}TurretImg`) || document.getElementById('turretImg');
         ctx.drawImage(turretImg, -20, -20, 40, 40);
 
-        // Draw special effects based on turret type
         if (this.target) {
             if (this.type === 'laser') {
                 ctx.beginPath();
@@ -258,7 +303,6 @@ class Turret {
                 ctx.lineTo(distance * Math.cos(angle), distance * Math.sin(angle));
                 ctx.stroke();
                 
-                // Add glow effect
                 ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
                 ctx.lineWidth = 6;
                 ctx.stroke();
@@ -327,7 +371,6 @@ class Bullet {
                 ctx.fill();
                 ctx.stroke();
                 
-                // Add snowflake effect
                 for (let i = 0; i < 6; i++) {
                     const angle = (Math.PI * 2 * i) / 6;
                     ctx.beginPath();

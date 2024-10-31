@@ -15,3 +15,23 @@
     padding: 1rem;
     border-radius: 0.25rem;
 }
+
+.turret-upgrade {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bs-secondary);
+}
+
+.turret-upgrade h4 {
+    color: var(--bs-info);
+    margin-bottom: 1rem;
+}
+
+.turret-upgrade p {
+    margin-bottom: 0.5rem;
+}
+
+.turret-upgrade button {
+    margin-top: 1rem;
+    width: 100%;
+}
